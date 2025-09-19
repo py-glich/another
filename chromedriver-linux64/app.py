@@ -1,9 +1,8 @@
-import os
 import time
 import streamlit as st
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+import chromedriver_autoinstaller
 
 # -----------------------------
 # Streamlit UI
@@ -18,11 +17,8 @@ join_button = st.button("🚀 Join Meeting")
 # Selenium Driver Setup
 # -----------------------------
 def start_driver():
-    # ✅ Path to chromedriver in same folder as app.py
-    DRIVER_PATH = os.path.join(os.path.dirname(__file__), "chromedriver")
-
-    # ✅ Fix permission for Streamlit Cloud
-    os.chmod(DRIVER_PATH, 0o755)
+    # ✅ Automatically install correct ChromeDriver
+    chromedriver_autoinstaller.install()
 
     options = webdriver.ChromeOptions()
     options.add_argument("--use-fake-ui-for-media-stream")
@@ -31,8 +27,7 @@ def start_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    service = Service(DRIVER_PATH)
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = webdriver.Chrome(options=options)
     return driver
 
 # -----------------------------
