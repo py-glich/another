@@ -42,10 +42,13 @@ def ask_ai(question):
 # 🔹 ChromeDriver Setup
 # ------------------------------
 def start_driver():
-    DRIVER_PATH = os.path.join(os.path.dirname(__file__), "chromedriver")  # uploaded binary
+    DRIVER_PATH = os.path.join(os.path.dirname(__file__), "chromedriver")
 
     options = Options()
-    options.add_argument("--headless=new")
+    # ⚠️ Start with GUI so you can log in manually first
+    # comment this when you confirm it works
+    # options.add_argument("--headless=new")
+
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
@@ -66,9 +69,17 @@ def run_meeting_bot(meet_code):
         driver.get(meeting_link)
         time.sleep(10)
 
-        st.session_state.subtitles.append("✅ Google Meet opened successfully!")
+        st.session_state.subtitles.append("✅ Google Meet page opened. Please ensure you are logged in!")
 
         while True:
+            # Debug: print all text nodes
+            all_divs = driver.find_elements(By.TAG_NAME, "div")
+            for d in all_divs[-10:]:  # check last 10 divs
+                txt = d.text.strip()
+                if txt:
+                    st.session_state.subtitles.append(f"[DEBUG] {txt}")
+                    break
+
             subtitles = driver.find_elements(By.CLASS_NAME, "iOzk7")
             if subtitles:
                 last_subtitle = subtitles[-1].text.strip()
@@ -93,17 +104,5 @@ if st.button("🚀 Join Meeting"):
     else:
         st.error("Meeting code is required!")
 
-# ------------------------------
-# 🔹 Display Panels
-# ------------------------------
-col1, col2 = st.columns(2)
+#
 
-with col1:
-    st.subheader("📝 Subtitles")
-    for s in st.session_state.subtitles:
-        st.write(s)
-
-with col2:
-    st.subheader("🤖 AI Responses")
-    for r in st.session_state.responses:
-        st.write(r)
