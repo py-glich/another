@@ -45,10 +45,8 @@ def start_driver():
     DRIVER_PATH = os.path.join(os.path.dirname(__file__), "chromedriver")
 
     options = Options()
-    # ⚠️ Start with GUI so you can log in manually first
-    # comment this when you confirm it works
+    # ⚠️ First test without headless to see everything
     # options.add_argument("--headless=new")
-
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
@@ -69,24 +67,26 @@ def run_meeting_bot(meet_code):
         driver.get(meeting_link)
         time.sleep(10)
 
-        st.session_state.subtitles.append("✅ Google Meet page opened. Please ensure you are logged in!")
+        # ✅ Try to click "Join now"
+        try:
+            join_btn = driver.find_element(By.XPATH, "//span[contains(text(),'Join now')]/..")
+            join_btn.click()
+            st.session_state.subtitles.append("✅ Clicked 'Join now' and entered the meeting!")
+        except Exception as e:
+            st.session_state.subtitles.append(f"⚠ Could not click Join now: {e}")
 
+        # ✅ Loop: capture subtitles + send to AI
         while True:
-            # Debug: print all text nodes
-            all_divs = driver.find_elements(By.TAG_NAME, "div")
-            for d in all_divs[-10:]:  # check last 10 divs
-                txt = d.text.strip()
-                if txt:
-                    st.session_state.subtitles.append(f"[DEBUG] {txt}")
-                    break
-
-            subtitles = driver.find_elements(By.CLASS_NAME, "iOzk7")
-            if subtitles:
-                last_subtitle = subtitles[-1].text.strip()
-                if last_subtitle and (not st.session_state.subtitles or st.session_state.subtitles[-1] != last_subtitle):
-                    st.session_state.subtitles.append(last_subtitle)
-                    answer = ask_ai(last_subtitle)
-                    st.session_state.responses.append(answer)
+            try:
+                subtitles = driver.find_elements(By.CLASS_NAME, "iOzk7")  # may need update if Meet changes
+                if subtitles:
+                    last_subtitle = subtitles[-1].text.strip()
+                    if last_subtitle and (not st.session_state.subtitles or st.session_state.subtitles[-1] != last_subtitle):
+                        st.session_state.subtitles.append(last_subtitle)
+                        answer = ask_ai(last_subtitle)
+                        st.session_state.responses.append(answer)
+            except Exception as e:
+                st.session_state.subtitles.append(f"⚠ Subtitle error: {e}")
             time.sleep(2)
 
     except Exception as e:
@@ -104,5 +104,18 @@ if st.button("🚀 Join Meeting"):
     else:
         st.error("Meeting code is required!")
 
-#
+# ------------------------------
+# 🔹 Display Panels
+# ------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("📝 Subtitles / Debug")
+    for s in st.session_state.subtitles[-20:]:
+        st.write(s)
+
+with col2:
+    st.subheader("🤖 AI Responses")
+    for r in st.session_state.responses[-20:]:
+        st.write(r)
 
